@@ -1,10 +1,13 @@
-module Dict.Extra exposing
+module AssocList.Extra exposing
     ( groupBy, filterGroupBy, fromListBy, fromListDedupe, fromListDedupeBy, frequencies
     , removeWhen, removeMany, keepOnly, insertDedupe, mapKeys, filterMap, invert
     , any, find
     )
 
-{-| Convenience functions for working with `Dict`
+{-| Convenience functions for working with [`AssocList.Dict`](https://package.elm-lang.org/packages/pzp1997/assoc-list/latest/)
+
+A copy of [`Dict.Extra`](https://package.elm-lang.org/packages/elm-community/dict-extra/latest/)
+that works on `AssocList.Dict` instead of the `Dict` implementation from `elm/core`.
 
 
 # List operations
@@ -23,20 +26,20 @@ module Dict.Extra exposing
 
 -}
 
-import Dict exposing (Dict)
-import Set exposing (Set)
+import AssocList as Dict exposing (Dict)
+import AssocSet as Set exposing (Set)
 
 
 {-| Takes a key-fn and a list.
 Creates a `Dict` which maps the key to a list of matching elements.
 
-    import Dict
+    import AssocList as Dict
 
     groupBy String.length [ "tree" , "apple" , "leaf" ]
     --> Dict.fromList [ ( 4, [ "tree", "leaf" ] ), ( 5, [ "apple" ] ) ]
 
 -}
-groupBy : (a -> comparable) -> List a -> Dict comparable (List a)
+groupBy : (v -> k) -> List v -> Dict k (List v)
 groupBy keyfn list =
     List.foldr
         (\x acc ->
@@ -50,7 +53,7 @@ groupBy keyfn list =
 Creates a `Dict` which maps the key to a list of matching elements, skipping elements
 where key-fn returns `Nothing`
 
-    import Dict
+    import AssocList as Dict
 
     filterGroupBy (String.uncons >> Maybe.map Tuple.first) [ "tree" , "", "tweet", "apple" , "leaf", "" ]
     --> Dict.fromList [ ( 't', [ "tree", "tweet" ] ), ( 'a', [ "apple" ] ), ( 'l', [ "leaf" ] ) ]
@@ -82,7 +85,7 @@ where key-fn returns `Nothing`
     --> ]
 
 -}
-filterGroupBy : (a -> Maybe comparable) -> List a -> Dict comparable (List a)
+filterGroupBy : (v -> Maybe k) -> List v -> Dict k (List v)
 filterGroupBy keyfn list =
     List.foldr
         (\x acc ->
@@ -100,13 +103,13 @@ filterGroupBy keyfn list =
 {-| Create a dictionary from a list of values, by passing a function that can get a key from any such value.
 If the function does not return unique keys, earlier values are discarded.
 
-    import Dict
+    import AssocList as Dict
 
     fromListBy String.length [ "tree" , "apple" , "leaf" ]
     --> Dict.fromList [ ( 4, "leaf" ), ( 5, "apple" ) ]
 
 -}
-fromListBy : (a -> comparable) -> List a -> Dict comparable a
+fromListBy : (v -> k) -> List v -> Dict k v
 fromListBy keyfn xs =
     List.foldl
         (\x acc -> Dict.insert (keyfn x) x acc)
@@ -119,7 +122,7 @@ duplicate keys. Create a dictionary from a list of pairs of keys and
 values, providing a function that is used to combine multiple values
 paired with the same key.
 
-    import Dict
+    import AssocList as Dict
 
     fromListDedupe
         (\a b -> a ++ " " ++ b)
@@ -127,7 +130,7 @@ paired with the same key.
     --> Dict.fromList [ ( "class", "menu big" ), ( "width", "100%" ) ]
 
 -}
-fromListDedupe : (a -> a -> a) -> List ( comparable, a ) -> Dict comparable a
+fromListDedupe : (v -> v -> v) -> List ( k, v ) -> Dict k v
 fromListDedupe combine xs =
     List.foldl
         (\( key, value ) acc -> insertDedupe combine key value acc)
@@ -137,13 +140,13 @@ fromListDedupe combine xs =
 
 {-| `fromListBy` and `fromListDedupe` rolled into one.
 
-    import Dict
+    import AssocList as Dict
 
     fromListDedupeBy (\first second -> first) String.length [ "tree" , "apple" , "leaf" ]
     --> Dict.fromList [ ( 4, "tree" ), ( 5, "apple" ) ]
 
 -}
-fromListDedupeBy : (a -> a -> a) -> (a -> comparable) -> List a -> Dict comparable a
+fromListDedupeBy : (v -> v -> v) -> (v -> k) -> List v -> Dict k v
 fromListDedupeBy combine keyfn xs =
     List.foldl
         (\x acc -> insertDedupe combine (keyfn x) x acc)
@@ -153,13 +156,13 @@ fromListDedupeBy combine keyfn xs =
 
 {-| Count the number of occurences for each of the elements in the list.
 
-    import Dict
+    import AssocList as Dict
 
     frequencies [ "A", "B", "C", "B", "C", "B" ]
     --> Dict.fromList [ ( "A", 1 ), ( "B", 3 ), ( "C", 2 ) ]
 
 -}
-frequencies : List comparable -> Dict comparable Int
+frequencies : List k -> Dict k Int
 frequencies list =
     list
         |> List.foldl
@@ -174,29 +177,29 @@ frequencies list =
 
 {-| Remove elements which satisfies the predicate.
 
-    import Dict
+    import AssocList as Dict
 
     Dict.fromList [ ( "Mary", 1 ), ( "Jack", 2 ), ( "Jill", 1 ) ]
         |> removeWhen (\_ value -> value == 1 )
     --> Dict.fromList [ ( "Jack", 2 ) ]
 
 -}
-removeWhen : (comparable -> v -> Bool) -> Dict comparable v -> Dict comparable v
+removeWhen : (k -> v -> Bool) -> Dict k v -> Dict k v
 removeWhen pred dict =
     Dict.filter (\k v -> not (pred k v)) dict
 
 
 {-| Remove a key-value pair if its key appears in the set.
 
-    import Dict
-    import Set
+    import AssocList as Dict
+    import AssocSet as Set
 
     Dict.fromList [ ( "Mary", 1 ), ( "Jack", 2 ), ( "Jill", 1 ) ]
         |> removeMany (Set.fromList [ "Mary", "Jill" ])
     --> Dict.fromList [ ( "Jack", 2 ) ]
 
 -}
-removeMany : Set comparable -> Dict comparable v -> Dict comparable v
+removeMany : Set k -> Dict k v -> Dict k v
 removeMany set dict =
     Set.foldl Dict.remove dict set
 
@@ -207,7 +210,7 @@ element at that key. The combining function is called with
 original element and the new element as arguments and
 returns the element to be inserted.
 
-    import Dict
+    import AssocList as Dict
 
     Dict.fromList [ ( "expenses", 38.25 ), ( "assets", 100.85 ) ]
         |> insertDedupe (+) "expenses" 2.50
@@ -215,7 +218,7 @@ returns the element to be inserted.
     --> Dict.fromList [ ( "expenses", 40.75 ), ( "assets", 100.85 ), ( "liabilities", -2.50 ) ]
 
 -}
-insertDedupe : (v -> v -> v) -> comparable -> v -> Dict comparable v -> Dict comparable v
+insertDedupe : (v -> v -> v) -> k -> v -> Dict k v -> Dict k v
 insertDedupe combine key value dict =
     let
         with mbValue =
@@ -231,15 +234,15 @@ insertDedupe combine key value dict =
 
 {-| Keep a key-value pair if its key appears in the set.
 
-    import Dict
-    import Set
+    import AssocList as Dict
+    import AssocSet as Set
 
     Dict.fromList [ ( "Mary", 1 ), ( "Jack", 2 ), ( "Jill", 1 ) ]
         |> keepOnly (Set.fromList [ "Jack", "Jill" ])
     --> Dict.fromList [ ( "Jack", 2 ), ( "Jill", 1 ) ]
 
 -}
-keepOnly : Set comparable -> Dict comparable v -> Dict comparable v
+keepOnly : Set k -> Dict k v -> Dict k v
 keepOnly set dict =
     Set.foldl
         (\k acc ->
@@ -251,7 +254,7 @@ keepOnly set dict =
 
 {-| Apply a function to all keys in a dictionary.
 
-    import Dict
+    import AssocList as Dict
 
     Dict.fromList [ ( 5, "Jack" ), ( 10, "Jill" ) ]
         |> mapKeys (\x -> x + 1)
@@ -262,7 +265,7 @@ keepOnly set dict =
     --> Dict.fromList [ ( "5", "Jack" ), ( "10", "Jill" ) ]
 
 -}
-mapKeys : (comparable -> comparable1) -> Dict comparable v -> Dict comparable1 v
+mapKeys : (k1 -> k2) -> Dict k1 v -> Dict k2 v
 mapKeys keyMapper dict =
     Dict.foldl
         (\k v acc ->
@@ -275,7 +278,7 @@ mapKeys keyMapper dict =
 {-| Apply a function that may or may not succeed to all entries in a dictionary,
 but only keep the successes.
 
-    import Dict
+    import AssocList as Dict
 
     let
         isTeen n a =
@@ -289,7 +292,7 @@ but only keep the successes.
     --> Dict.fromList [ ( 15, "JILL" ) ]
 
 -}
-filterMap : (comparable -> a -> Maybe b) -> Dict comparable a -> Dict comparable b
+filterMap : (k -> v1 -> Maybe v2) -> Dict k v1 -> Dict k v2
 filterMap f dict =
     Dict.foldl
         (\k v acc ->
@@ -306,14 +309,14 @@ filterMap f dict =
 
 {-| Inverts the keys and values of an array.
 
-    import Dict
+    import AssocList as Dict
 
     Dict.fromList [ ("key", "value")  ]
         |> invert
     --> Dict.fromList [ ( "value", "key" ) ]
 
 -}
-invert : Dict comparable1 comparable2 -> Dict comparable2 comparable1
+invert : Dict a b -> Dict b a
 invert dict =
     Dict.foldl
         (\k v acc ->
@@ -325,7 +328,7 @@ invert dict =
 
 {-| Determine if any key/value pair satisfies some test.
 
-    import Dict
+    import AssocList as Dict
 
     Dict.fromList [ ( 9, "Jill" ), ( 7, "Jill" ) ]
         |> any (\_ value -> value == "Jill")
@@ -336,7 +339,7 @@ invert dict =
     --> False
 
 -}
-any : (comparable -> a -> Bool) -> Dict comparable a -> Bool
+any : (k -> v -> Bool) -> Dict k v -> Bool
 any predicate dict =
     Dict.foldl
         (\k v acc ->
@@ -355,7 +358,7 @@ any predicate dict =
 
 {-| Find the first key/value pair that matches a predicate.
 
-    import Dict
+    import AssocList as Dict
 
     Dict.fromList [ ( 9, "Jill" ), ( 7, "Jill" ) ]
         |> find (\_ value -> value == "Jill")
@@ -366,7 +369,7 @@ any predicate dict =
     --> Nothing
 
 -}
-find : (comparable -> a -> Bool) -> Dict comparable a -> Maybe ( comparable, a )
+find : (k -> v -> Bool) -> Dict k v -> Maybe ( k, v )
 find predicate dict =
     Dict.foldl
         (\k v acc ->
