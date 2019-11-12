@@ -5,7 +5,7 @@
   },
   "devDependencies": {
     "elm-test": "^0.19.1",
-    "elm-verify-examples": "^3.1.0"
+    "elm-verify-examples": "^5.0.0"
   },
   "dependencies": {}
 }
