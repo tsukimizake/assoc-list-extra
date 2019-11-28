@@ -1,4 +1,5 @@
 ![](https://github.com/skyqrose/assoc-list-extra/workflows/test/badge.svg)
+[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=skyqrose/assoc-list-extra)](https://dependabot.com)
 
 # AssocList Extra
 
