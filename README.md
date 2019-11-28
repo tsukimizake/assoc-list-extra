@@ -1,3 +1,5 @@
+![](https://github.com/skyqrose/assoc-list-extra/workflows/test/badge.svg)
+
 # AssocList Extra
 
 Convenience functions for working with [`AssocList.Dict`](https://package.elm-lang.org/packages/pzp1997/assoc-list/latest/)
