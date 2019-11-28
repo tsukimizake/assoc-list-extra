@@ -1,2 +1,0 @@
-language: elm
-script: npm test
