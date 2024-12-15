@@ -298,13 +298,14 @@ filterMap f dict =
         (\k v acc ->
             case f k v of
                 Just newVal ->
-                    Dict.insert k newVal acc
+                    ( k, newVal ) :: acc
 
                 Nothing ->
                     acc
         )
-        Dict.empty
+        []
         dict
+        |> Dict.fromList
 
 
 {-| Inverts the keys and values of an array.
